@@ -3,7 +3,7 @@ version 7
 __lua__
 chain = {}
 
-gravity = 1
+gravity = 0
 
 function linkupdate(link)
  local vx = link.x-link.a.x+link.a.vx
@@ -34,8 +34,8 @@ function _init()
  chain[0].y = 0
  chain[0].vx= 0
  chain[0].vy= 0
- local r = 0.001
- for x=1,16 do
+ local r = 15
+ for x=1,5 do
   local link = {}
   link.r = r
   link.r2 = r*r
@@ -76,30 +76,30 @@ function _draw()
 	rectfill(0,0,128,128)
 	
 	
-	
+	local log_rad = 5
+	local log_len = 20
+	color(8)
  for i in all(chain) do
-  for x=-2,21 do
-   for y=-2,2 do
-    if x!=0 or y!=0 then
-     camera(x,y)
-     color(0)
-     line(i.ax, i.ay, i.x, i.y)
-     circ(i.x,i.y,2)
- 	  end
-   end
+  if(i!=chain[1]) then
+  line(i.ax-log_len, i.ay, i.x-log_len, i.y)
   end
-  color(7)
-  line(i.x,i.y-1,i.x+18,i.y-1)
-  color(8)
-  line(i.x,i.y+5,i.x+18,i.y+5)
- end
- camera(0,0)
+ end
  for i in all(chain) do
-  circfill(i.x,i.y,2)
+  color(2)
+  rectfill(i.x,i.y-log_rad,i.x-log_len,i.y+log_rad)
+  circfill(i.x-1,i.y,log_rad)
+  circfill(i.x-log_len+1,i.y,log_rad)
+  color(7)
+  line(i.x,i.y-log_rad+1,i.x-log_len,i.y-log_rad+1)
+  color(8)
+  line(i.x,i.y+log_rad-1,i.x-log_len,i.y+log_rad-1)
  end
  color(8)
  for i in all(chain) do
+  circfill(i.x,i.y,log_rad-2)
+  if(i!=chain[1]) then
   line(i.ax, i.ay, i.x, i.y)
+  end
  end
  
  
