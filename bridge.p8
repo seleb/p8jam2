@@ -14,22 +14,29 @@ gap2 = gap*gap
 bridge_height = 64
 damping = 0.75
 
-function _init()
- local num_links = 256/gap
- for x=1,num_links do
-  local link = {}
-  link.x = x*gap
-  link.y = bridge_height
-  link.v = 0
-  link.dv = 0
-  if(x==1)then
-   link.up = nil
-  else
-   link.up = chain[x-1]
-   link.up.down = link
-  end
+chain_start = 1
+chain_end = 256/gap
+
+
+function add_chain(x) 
+ local link = {}
+ link.x = x*gap
+ link.y = bridge_height
+ link.v = 0
+ link.dv = 0
+ if(x==chain_start)then
   link.down = nil
-  chain[x] = link
+ else
+  link.down = chain[x-1]
+  link.down.up = link
+ end
+ link.up = nil
+ chain[x] = link
+end
+
+function _init()
+ for x=chain_start,chain_end do
+  add_chain(x)
  end
  
  player.frame = 1
@@ -135,16 +142,17 @@ function _update()
   player.vx = 0
  end
  player.x += player.vx
- player.link1 = flr(player.x/gap)
+ player.link1 = chain_start+flr(player.x/gap)
  player.link2 = player.link1+1
  
  
- chain[1].y=bridge_height
- chain[#chain].y=bridge_height
- chain[1].vy=0
- chain[#chain].vy=0
- 
- 
+ -- constrain chain ends
+ chain[chain_start].y=bridge_height
+ chain[chain_end].y=bridge_height
+ chain[chain_start].v=0
+ chain[chain_end].v=0
+ chain[chain_start].dv=0
+ chain[chain_end].dv=0
  
  -- camera
  cam.x += (player.x - 64 - cam.x)*0.1
@@ -184,11 +192,11 @@ function _draw()
 	
 	color(8)
  for i in all(chain) do
-  if(i!=chain[1]) then
-  line(i.up.x-log_len, i.up.y+log_rad, i.x-log_len, i.y+log_rad)
-  end
+  --if(i!=chain[chain_start]) then
+  --line(i.up.x-log_len, i.up.y+log_rad, i.x-log_len, i.y+log_rad)
+  --end
  end
- for i=#chain,1,-1 do
+ for i=chain_end,chain_start,-1 do
   if(i == player.link1) then
    draw_player()
   end
