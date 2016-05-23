@@ -213,7 +213,7 @@ function _update()
  print('start:'..chain_start)
  print(get_chain(chain_start))
  print('c[start].y:'..get_chain(chain_start).y)
- get_chain(chain_start).y=bridge_height
+ get_chain(chain_start).y=bridge_height+64
  get_chain(chain_end).y=bridge_height
  get_chain(chain_start).v=0
  get_chain(chain_end).v=0
@@ -298,7 +298,7 @@ function _draw()
  --cls()
  camera(0,0)
  local cx = (cam.x*0.5%16)
- local cy = (cam.y*0.5%16)
+ local cy = ((cam.y-player.x)*0.2%16)
  map(0,0,-cx,-cy,18,18)
  
 	camera(cam.x, cam.y)
