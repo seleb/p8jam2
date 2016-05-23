@@ -3,11 +3,12 @@ version 7
 __lua__
 chain = {}
 player = {}
+cam = {}
 
 gravity = 1
 
 log_rad = 5
-log_len = 20
+log_len = 32
 gap = 8
 gap2 = gap*gap
 bridge_height = 64
@@ -32,12 +33,17 @@ function _init()
  end
  
  player.frame = 1
+ player.grounded = false
  player.link1 = flr(#chain/2)
  player.link2 = player.link1+1
  player.x = chain[player.link1].x
  player.y = chain[player.link1].y
  player.vy = 0
+ player.vx = 0
  player.dv = 0
+ 
+ cam.x = 0
+ cam.y = 0
 end
 
 
@@ -51,18 +57,16 @@ function _update()
   if(link.down) then
    local dy = link.down.y - link.y
    link.dv += dy*1.1
-   --link.dv += (link.down.v - link.v)/5
   end
   if(link.up) then
    local dy = link.up.y- link.y
    link.dv += dy*1.1
-   --link.dv += (link.up.v - link.v)/5
   end
  end
  
  -- apply gravity
  for link in all(chain) do
-  link.dv += gravity--+sin(time())
+  link.dv += -gravity--+sin(time())
  end
  
  -- integrate
@@ -82,32 +86,39 @@ function _update()
   or
   player.y+player.vy+1 > links_y
  )then
+  -- player pushes bridge
   if(player.vy > 0) then
    chain[player.link1].v += player.vy*(1-ratio)
    chain[player.link2].v += player.vy*(1-ratio)
-  end
-  player.frame = 1
+  end
+  player.dv -= 0.5*chain[player.link1].v*(1-ratio)
+  player.dv -= 0.5*chain[player.link2].v*ratio
+  player.grounded = true
   player.y = links_y
  else
-  player.frame = 0
+  player.grounded = false
  end
  player.dv += gravity
  player.vy += player.dv
- player.vy *= damping
  player.y += player.vy
  
- if(player.frame == 1) then
-  --grounded
-  if(btn(2)) then
-   player.vy = -10
-  end
- end
+ --run
  if(btn(0)) then
-  player.x -= 1
+  player.vx -= 1
  end
  if(btn(1)) then
-  player.x += 1
+  player.vx += 1
  end
+ --jump
+ if(player.grounded) then
+  if(btnp(2) or btnp(4)) then
+   player.vy = -10
+   player.frame = 1
+  end
+ end
+ 
+ player.vx *= damping
+ player.x += player.vx
  player.link1 = flr(player.x/gap)
  player.link2 = player.link1+1
  
@@ -116,8 +127,32 @@ function _update()
  chain[#chain].y=bridge_height
  chain[1].vy=0
  chain[#chain].vy=0
+ 
+ 
+ 
+ -- camera
+ cam.x += (player.x - 64 - cam.x)*0.1
+ cam.y += (player.y - 64 - cam.y)*0.1
+ camera(cam.x, cam.y)
+ 
+ 
+ if(btnp(5)) then
+  col_offset += 1
+  pal()
+  for x=0,15 do
+   pal(x,(x+col_offset)%16,1)
+  end
+ end
 end
 
+col_offset = 0
+-- sets the color to _c + offset
+-- and returns the modified color
+function color2(_c)
+ local c = (_c+col_offset)%16
+ color(c)
+ return c
+end
 
 function draw_player()
  sspr(8+player.frame*16,0,16,16,player.x-8-log_len/2,player.y-16)
@@ -127,13 +162,13 @@ end
 function _draw()
  cls()
 color(7)
-	rectfill(0,0,128,128)
+	rectfill(cam.x,cam.y,cam.x+128,cam.y+128)
 	
 	
 	color(8)
  for i in all(chain) do
   if(i!=chain[1]) then
-  line(i.up.x-log_len, i.up.y, i.x-log_len, i.y)
+  line(i.up.x-log_len, i.up.y+log_rad, i.x-log_len, i.y+log_rad)
   end
  end
  for i=#chain,1,-1 do
@@ -142,25 +177,25 @@ function _draw()
   end
   i = chain[i]
   color(2)
-  rectfill(i.x,i.y-log_rad,i.x-log_len,i.y+log_rad)
-  circfill(i.x,i.y,log_rad)
-  circfill(i.x-log_len,i.y,log_rad)
+  rectfill(i.x,i.y,i.x-log_len,i.y+log_rad*2)
+  circfill(i.x,i.y+log_rad,log_rad)
+  circfill(i.x-log_len,i.y+log_rad,log_rad)
   
   color(7)
-  line(i.x,i.y-log_rad+1,i.x-log_len,i.y-log_rad+1)
+  line(i.x-2,i.y+1,i.x-log_len-1,i.y+1)
   color(8)
-  line(i.x,i.y+log_rad-1,i.x-log_len,i.y+log_rad-1)
+  line(i.x-2,i.y+log_rad*2-1,i.x-log_len-1,i.y+log_rad*2-1)
  end
  color(8)
  for i in all(chain) do
-  circfill(i.x,i.y,log_rad-1)
+  circfill(i.x,i.y+log_rad,log_rad-1)
   if(i.up) then
-  line(i.up.x, i.up.y, i.x, i.y)
+  line(i.up.x, i.up.y+log_rad, i.x, i.y+log_rad)
   end
  end
  
  color(0)
- cursor(1,1)
+ cursor(cam.x+1,cam.y+1)
  print(time())
 end
 __gfx__
