@@ -5,19 +5,18 @@ chain = {}
 
 gravity = 1
 
-gap = 5
+gap = 8
 gap2 = gap*gap
 bridge_height = 64
 
 function _init()
  local num_links = 128/gap
- local r = 15
  for x=1,num_links do
   local link = {}
   link.x = x*gap
-  link.y = bridge_height
-  link.vy = 0
-  link.pvy = 0
+  link.y = bridge_height
+  link.v = 0
+  link.dv = 0
   if(x==1)then
    link.up = nil
   else
@@ -29,34 +28,43 @@ function _init()
  end
 end
 
+
 function _update()
  local speed = 15
  local ctrl = flr(#chain/2)
- if(btn(2)) chain[ctrl].pvy -= speed
- if(btn(3)) chain[ctrl].pvy += speed
+ if(btn(2)) chain[ctrl].dv -= speed
+ if(btn(3)) chain[ctrl].dv += speed
 
  for link in all(chain) do
   if(link.down) then
    local dy = link.down.y - link.y
-   link.pvy += dy
-   --link.pvy += (link.down.vy - link.vy)/5
+   link.dv += dy
+   --link.dv += (link.down.v - link.v)/5
   end
   if(link.up) then
    local dy = link.up.y- link.y
-   link.pvy += dy
-   --link.pvy += (link.up.vy - link.vy)/5
+   link.dv += dy
+   --link.dv += (link.up.v - link.v)/5
   end
  end
  
+ -- apply gravity
+ for link in all(chain) do
+  link.dv += gravity--+sin(time())
+ end
  
  for link in all(chain) do
-  link.pvy += gravity--+sin(time())
-  link.pvy *= 0.8
-  link.vy = link.pvy
-  link.y += link.vy
+  link.v += link.dv
+  link.v *= 0.8
+  link.y += link.v
+  link.dv = 0
  end
+ 
+ 
  chain[1].y=bridge_height
  chain[#chain].y=bridge_height
+ chain[1].vy=0
+ chain[#chain].vy=0
 end
 
 function _draw()
@@ -87,7 +95,7 @@ function _draw()
  end
  color(8)
  for i in all(chain) do
-  circfill(i.x,i.y,log_rad-2)
+  circfill(i.x,i.y,log_rad-1)
   if(i.up) then
   line(i.up.x, i.up.y, i.x, i.y)
   end
@@ -97,6 +105,7 @@ function _draw()
  
  
  color(0)
+ cursor(1,1)
  print(time())
 end
 __gfx__
