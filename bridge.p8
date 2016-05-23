@@ -15,7 +15,8 @@ bridge_height = 64
 damping = 0.75
 
 chain_start = 16
-chain_end = chain_start+16
+chain_len = 16
+chain_end = chain_start+chain_len
 
 function get_chain(x)
  return chain[''..x]
@@ -66,7 +67,7 @@ end
 
 function _update()
  --local speed = 15
- --local ctrl = flr(#chain/2)
+ --local ctrl = flr(chain_len/2)
  --if(btn(2)) chain[ctrl].dv -= speed
  --if(btn(3)) chain[ctrl].dv += speed
 
@@ -154,7 +155,7 @@ function _update()
  end
  player.x += player.vx
  
- if(player.x > (chain_start+#chain/2)*gap) then
+ if(player.x > (chain_start+chain_len/2)*gap) then
   local c = get_chain(chain_start)
   set_chain(chain_start,nil)
   chain_end += 1
@@ -166,7 +167,7 @@ function _update()
   c.down = get_chain(chain_end-1)
   c.down.up = c
  end
- if(player.x < (chain_end-#chain/2)*gap) then
+ if(player.x < (chain_end-chain_len/2)*gap) then
   local c = get_chain(chain_end)
   set_chain(chain_end,nil)
   chain_end -= 1
@@ -257,7 +258,7 @@ function draw_chain()
   end
  end
  color(8)
- for x=chain_start,chain_end-1 do
+ for x=chain_start,chain_end do
   local link = get_chain(x)
   local drawp = link == player.link
   if(drawp) then
