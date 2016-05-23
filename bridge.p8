@@ -76,6 +76,19 @@ function _init()
 end
 
 
+
+function update_camera()
+ local offsety = 64 + 20
+ local offsetx= 64
+ if player.flip then
+  offsetx += 20
+ else
+  offsetx -= 20
+ end
+ cam.x += (player.x - offsetx - cam.x)*0.1
+ cam.y += (player.y - offsety - cam.y)*0.1
+end
+
 function _update()
  --local speed = 15
  --local ctrl = flr(chain_len/2)
@@ -207,9 +220,7 @@ function _update()
  get_chain(chain_start).dv=0
  get_chain(chain_end).dv=0
  
- -- camera
- cam.x += (player.x - 64 - cam.x)*0.1
- cam.y += (player.y - 64 - cam.y)*0.1
+ update_camera()
  
  if(btnp(5)) then
   pal_swap(1)
@@ -290,9 +301,6 @@ function _draw()
  local cy = (cam.y*0.5%16)
  map(0,0,-cx,-cy,18,18)
  
- color(7)
-	--rectfill(cam.x%8,cam.y%8,cam.x+128,cam.y+128)
-	
 	camera(cam.x, cam.y)
 	
 	draw_chain()
