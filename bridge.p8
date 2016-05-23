@@ -19,13 +19,13 @@ function _init()
  for x=1,num_links do
   local link = {}
   link.x = x*gap
-  link.y = bridge_height
+  link.y = bridge_height
   link.v = 0
   link.dv = 0
   if(x==1)then
    link.up = nil
   else
-   link.up = chain[x-1]
+   link.up = chain[x-1]
    link.up.down = link
   end
   link.down = nil
@@ -57,18 +57,18 @@ function _update()
  for link in all(chain) do
   if(link.down) then
    local dy = link.down.y - link.y
-   link.dv += dy*1.1
+   link.dv += dy
   end
-  if(link.up) then
-   local dy = link.up.y- link.y
-   link.dv += dy*1.1
+  if(link.up) then
+   local dy = link.up.y - link.y
+   link.dv += dy
   end
- end
+ end
  
  -- apply gravity
- for link in all(chain) do
-  link.dv -= 0 --+= -gravity--+sin(time())
- end
+ --[[for link in all(chain) do
+  link.dv -= sin(time()*3+link.x*0.1) --+= -gravity--+sin(time())
+ end]]
  
  -- integrate
  for link in all(chain) do
@@ -81,14 +81,10 @@ function _update()
  -- player
  player.dv = 0
  local ratio = (player.x%gap)/gap
- local r1 = max(0.25,ratio)
- local r2 = max(0.25,1-r1)
+ local r1 = mid(0.75,0.25,ratio)
+ local r2 = mid(0.75,0.25,1-r1)
  local links_y = chain[player.link1].y*r2 + chain[player.link2].y*r1
- if(
-  player.y+1 > links_y
-  or
-  player.y+player.vy > links_y
- )then
+ if(player.y+max(1,player.vy) > links_y)then
   -- player pushes bridge
   if(player.vy > 0) then
    chain[player.link1].v += 3*player.vy*r2
@@ -101,7 +97,8 @@ function _update()
   player.y = links_y
  else
   player.grounded = false
- end
+ end
+
  player.dv += gravity
  player.vy += player.dv
  player.y += player.vy
@@ -110,19 +107,18 @@ function _update()
  if(btn(0)) then
   player.vx -= 1
   player.flip = true
- elseif(btn(1))then
+ elseif(btn(1)) then
   player.vx += 1
   player.flip = false
  end
  --jump
  if(player.grounded) then
-  player.frame = 1
-  if(btnp(2) or btnp(4)) then
-   player.vy = -10
+  if(btn(2) or btn(4)) then
+   player.vy = -10
   end
  end
  
- if player.grounded then
+ if player.grounded then
   player.frame = 0
   if abs(player.vx) >0.5 then
    player.frame = 1
@@ -133,8 +129,11 @@ function _update()
  else
   player.frame = 1
  end
+ 
  player.vx *= damping
- if(abs(player.vx) < 0.01) player.vx = 0
+ if(abs(player.vx) < 0.01) then
+  player.vx = 0
+ end
  player.x += player.vx
  player.link1 = flr(player.x/gap)
  player.link2 = player.link1+1
@@ -178,7 +177,8 @@ end
 
 function _draw()
  cls()
-color(7)
+
+ color(7)
 	rectfill(cam.x,cam.y,cam.x+128,cam.y+128)
 	
 	
@@ -198,7 +198,8 @@ function _draw()
   circfill(i.x,i.y+log_rad,log_rad)
   circfill(i.x-log_len,i.y+log_rad,log_rad)
   
-  color(7)
+  color(7)
+
   line(i.x-2,i.y+1,i.x-log_len-1,i.y+1)
   color(8)
   line(i.x-2,i.y+log_rad*2-1,i.x-log_len-1,i.y+log_rad*2-1)
@@ -216,9 +217,12 @@ function _draw()
  print(time())
  
  local ratio = (player.x%gap)/gap
- local links_y = chain[player.link1].y*(1-ratio) + chain[player.link2].y*ratio
+ local r1 = ratio
+ local r2 = 1-r1
+ local links_y = chain[player.link1].y*r2 + chain[player.link2].y*r1
  
- print(ratio)
+ print(r1)
+ print(r2)
  print(links_y)
 end
 __gfx__
