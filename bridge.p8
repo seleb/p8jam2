@@ -14,37 +14,46 @@ gap2 = gap*gap
 bridge_height = 64
 damping = 0.75
 
-chain_start = 1
-chain_end = 256/gap
+chain_start = 16
+chain_end = chain_start+16
 
+function get_chain(x)
+ return chain[''..x]
+end
+
+function set_chain(x,v)
+ chain[''..x]=v
+end
 
 function add_chain(x) 
  local link = {}
  link.x = x*gap
  link.y = bridge_height
  link.v = 0
- link.dv = 0
- if(x==chain_start)then
-  link.down = nil
- else
-  link.down = chain[x-1]
-  link.down.up = link
- end
- link.up = nil
- chain[x] = link
+ link.dv= 0
+ link.up  =nil
+ link.down=nil
+ set_chain(x,link)
 end
 
 function _init()
  for x=chain_start,chain_end do
   add_chain(x)
  end
+ -- connect links
+ local down = nil
+ for x=chain_start,chain_end do
+  local c = get_chain(x)
+  c.up = get_chain(x+1)
+  c.down = down
+  down = c
+ end
  
  player.frame = 1
  player.grounded = false
- player.link1 = flr(#chain/2)
- player.link2 = player.link1+1
- player.x = chain[player.link1].x
- player.y = chain[player.link1].y
+ player.link = get_chain(chain_start)
+ player.x = player.link.x
+ player.y = player.link.y
  player.vy = 0
  player.vx = 0
  player.dv = 0
@@ -61,7 +70,8 @@ function _update()
  --if(btn(2)) chain[ctrl].dv -= speed
  --if(btn(3)) chain[ctrl].dv += speed
 
- for link in all(chain) do
+ for x=chain_start,chain_end do
+  local link = get_chain(x)
   if(link.down) then
    local dy = link.down.y - link.y
    link.dv += dy
@@ -78,7 +88,8 @@ function _update()
  end]]
  
  -- integrate
- for link in all(chain) do
+ for x=chain_start,chain_end do
+  local link = get_chain(x)
   link.v += link.dv
   link.v *= damping
   link.y += link.v
@@ -90,16 +101,16 @@ function _update()
  local ratio = (player.x%gap)/gap
  local r1 = mid(0.75,0.25,ratio)
  local r2 = mid(0.75,0.25,1-r1)
- local links_y = chain[player.link1].y*r2 + chain[player.link2].y*r1
+ local links_y = player.link.y*r2 + player.link.up.y*r1
  if(player.y+max(1,player.vy) > links_y)then
   -- player pushes bridge
   if(player.vy > 0) then
-   chain[player.link1].v += 3*player.vy*r2
-   chain[player.link2].v += 3*player.vy*r1
+   player.link.v += 3*player.vy*r2
+   player.link.up.v += 3*player.vy*r1
   end
   -- bridge pushes player
-  player.dv -= 0.5*chain[player.link1].v*r2
-  player.dv -= 0.5*chain[player.link2].v*r1
+  player.dv -= 0.5*player.link.v*r2
+  player.dv -= 0.5*player.link.up.v*r1
   player.grounded = true
   player.y = links_y
  else
@@ -142,17 +153,47 @@ function _update()
   player.vx = 0
  end
  player.x += player.vx
- player.link1 = chain_start+flr(player.x/gap)
- player.link2 = player.link1+1
  
+ if(player.x > (chain_start+#chain/2)*gap) then
+  local c = get_chain(chain_start)
+  set_chain(chain_start,nil)
+  chain_end += 1
+  chain_start += 1
+  set_chain(chain_end,c)
+  c.x = chain_end*gap
+  c.up.down = nil
+  c.up = nil
+  c.down = get_chain(chain_end-1)
+  c.down.up = c
+ end
+ if(player.x < (chain_end-#chain/2)*gap) then
+  local c = get_chain(chain_end)
+  set_chain(chain_end,nil)
+  chain_end -= 1
+  chain_start -= 1
+  set_chain(chain_start,c)
+  c.x = chain_start*gap
+  c.down.up = nil
+  c.down= nil
+  c.up = get_chain(chain_start+1)
+  c.up.down = c
+ end
  
- -- constrain chain ends
- chain[chain_start].y=bridge_height
- chain[chain_end].y=bridge_height
- chain[chain_start].v=0
- chain[chain_end].v=0
- chain[chain_start].dv=0
- chain[chain_end].dv=0
+ -- get player links for next frame
+ local link_pos = flr(player.x/gap)
+ print('lpos:'..link_pos)
+ player.link = get_chain(link_pos)
+ 
+ -- constrain chain ends
+ print('start:'..chain_start)
+ print(get_chain(chain_start))
+ print('c[start].y:'..get_chain(chain_start).y)
+ get_chain(chain_start).y=bridge_height
+ get_chain(chain_end).y=bridge_height
+ get_chain(chain_start).v=0
+ get_chain(chain_end).v=0
+ get_chain(chain_start).dv=0
+ get_chain(chain_end).dv=0
  
  -- camera
  cam.x += (player.x - 64 - cam.x)*0.1
@@ -161,15 +202,19 @@ function _update()
  
  
  if(btnp(5)) then
-  col_offset += 1
-  pal()
-  for x=0,15 do
-   pal(x,(x+col_offset)%16,1)
-  end
+  pal_swap(1)
  end
 end
 
 col_offset = 0
+function pal_swap(d)
+ col_offset += d
+ col_offset %= 16
+ pal()
+ for x=0,15 do
+  pal(x,(x+col_offset)%16,0)
+ end
+end
 -- sets the color to _c + offset
 -- and returns the modified color
 function color2(_c)
@@ -183,24 +228,19 @@ function draw_player()
  pset(player.x-log_len/2, player.y, 0)
 end
 
-function _draw()
- cls()
-
- color(7)
-	rectfill(cam.x,cam.y,cam.x+128,cam.y+128)
-	
-	
-	color(8)
- for i in all(chain) do
-  --if(i!=chain[chain_start]) then
-  --line(i.up.x-log_len, i.up.y+log_rad, i.x-log_len, i.y+log_rad)
-  --end
+function draw_chain()
+ color(8)
+ for x=chain_start,chain_end-1 do
+  local link = get_chain(x)
+  line(link.up.x-log_len, link.up.y+log_rad, link.x-log_len, link.y+log_rad)
  end
- for i=chain_end,chain_start,-1 do
-  if(i == player.link1) then
+ for i=chain_end,chain_start,-1 do
+  i = get_chain(i)
+  local drawp = i == player.link
+  if(drawp) then
    draw_player()
-  end
-  i = chain[i]
+   pal_swap(-1)
+  end
   color(2)
   rectfill(i.x,i.y,i.x-log_len,i.y+log_rad*2)
   circfill(i.x,i.y+log_rad,log_rad)
@@ -211,27 +251,43 @@ function _draw()
   line(i.x-2,i.y+1,i.x-log_len-1,i.y+1)
   color(8)
   line(i.x-2,i.y+log_rad*2-1,i.x-log_len-1,i.y+log_rad*2-1)
- end
- color(8)
- for i in all(chain) do
-  circfill(i.x,i.y+log_rad,log_rad-1)
-  if(i.up) then
-  line(i.up.x, i.up.y+log_rad, i.x, i.y+log_rad)
+  
+  if(drawp) then
+   pal_swap(1)
   end
  end
+ color(8)
+ for x=chain_start,chain_end-1 do
+  local link = get_chain(x)
+  local drawp = link == player.link
+  if(drawp) then
+   pal_swap(-1)
+  end
+  circfill(link.x,link.y+log_rad,log_rad-1)
+  if(link.up) then
+  line(link.up.x, link.up.y+log_rad, link.x, link.y+log_rad)
+  end
+  if(drawp) then
+   pal_swap(1)
+  end
+ end
+end
+
+function _draw()
+ cls()
+
+ color(7)
+	rectfill(cam.x,cam.y,cam.x+128,cam.y+128)
+	
+	
+	draw_chain()
  
  color(0)
  cursor(cam.x+1,cam.y+1)
- print(time())
- 
- local ratio = (player.x%gap)/gap
- local r1 = ratio
- local r2 = 1-r1
- local links_y = chain[player.link1].y*r2 + chain[player.link2].y*r1
- 
- print(r1)
- print(r2)
- print(links_y)
+ print('time: '..time())
+ print('x: '..player.x)
+ print('y: '..player.y)
+ print('c: '..chain_start..'->'..chain_end)
 end
 __gfx__
 00000000000022222220000000002222222000000000222222200000000000000000000000000000000000000000000000000000000000000000000000000000
