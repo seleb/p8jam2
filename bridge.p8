@@ -7,8 +7,8 @@ cam = {}
 
 gravity = 1
 
-log_rad = 4
-log_len = 32
+log_rad = 6
+log_len = 40
 gap = 8
 gap2 = gap*gap
 bridge_height = 64
@@ -101,6 +101,7 @@ function _init()
  hud.score = 0
  hud.lives = 3
  hud.parts = {}
+ hud.chain = 1
  
  amp = 0
  frq = 0
@@ -119,6 +120,8 @@ function _init()
  end
  
  menu = "press x to start"
+ col_offset = 0
+ pal_swap(-1)
 end
 
 
@@ -277,6 +280,7 @@ function lose_life()
  end
  
  hud.lives -= 1
+ hud.chain = 1
  hud.y += 10
  sfx(36,3)
  cam.y += 10
@@ -288,17 +292,18 @@ function lose_life()
 end
 
 function add_pts(pts)
- hud.score += pts
  p = {}
- p.pts = pts
+ p.pts = pts*hud.chain
  p.x = hud.x
  p.y = hud.y
  p.vx = rnd(2)-1
  p.vy = -rnd(4)-4
  add(hud.parts, p)
+ hud.score += p.pts
+ hud.chain += 1
  hud.y -= 3
  sfx(35,3)
- cam.y -= 5
+ cam.y += 10
  add_pop(hud.x+8,hud.y+4,8,8)
  add_pop(hud.x+8,hud.y+4,7,7)
 end
@@ -363,6 +368,7 @@ function _update()
  --jump
  if(player.grounded) then
   if(btnp(2) or btnp(4)) then
+   hud.chain = 1
    player.vy = -8
    cam.y -= 8
    player.walking = false
@@ -464,7 +470,6 @@ function _update()
  end
 end
 
-col_offset = 0
 function pal_swap(d)
  col_offset += d
  col_offset %= 16
@@ -559,15 +564,9 @@ function draw_debug()
 end
 
 function draw_hud()
- local s = hud.score..'pts'
- color(2)
- for x=0,2 do
- for y=-1,1 do
- print(s, hud.x+x,hud.y+y)
- end
- end
- color(8)
- print(s, hud.x+1,hud.y)
+ local s = hud.score..'ptsx'..hud.chain
+ 
+ print_ol(s, hud.x+1,hud.y)
  for i=1,hud.lives do
   spr(32,hud.x+(i-1)*7,hud.y+4)
  end
@@ -576,16 +575,8 @@ function draw_hud()
  end
  
  for p in all(hud.parts) do
-  local s = '+'..p.pts
-  color(2)
-  for x=0,2 do
-  for y=-1,1 do
-  print(s, p.x+x,p.y+y)
-  end
-  end
-  color(8)
-  print(s, p.x+1,p.y)
-  end
+  print_ol('+'..p.pts, p.x, p.y)
+ end
 end
 
 function draw_border()
@@ -643,12 +634,8 @@ function _draw()
   draw_hud()
   draw_pops()
  else
-  for x=-1,1 do
-  for y=-1,1 do
-   print(menu,cam.x+64-#menu*4/2+x,cam.y+64+y,2)
-  end
-  end
-  print(menu,cam.x+64-#menu*4/2,cam.y+64,7+time()*5%2)
+  print_ol(menu,cam.x+64-#menu*4/2,cam.y+64,7+time()*5%2)
+  print_ol("score:"..hud.score, cam.x+10, cam.y+10)
  end
  
  draw_border()
@@ -658,6 +645,15 @@ end
 
 function to_screen(x,y)
  return 0x6000+(x)/2+y*64
+end
+
+function print_ol(s,_x,_y)
+ for x=-1,1 do
+ for y=-1,1 do
+ print(s,_x+x,_y+y,2)
+ end
+ end
+ print(s,_x,_y,8)
 end
 __gfx__
 00000000000000000000000000002222222000000000000000000000000000000000000077007700000000000000000000000000000000000000000000000000
