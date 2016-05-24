@@ -84,15 +84,15 @@ end
 
 
 function update_camera()
- local offsety = 64 + 20
- local offsetx = 64
+ local offsety = -64 - 20
+ local offsetx = -64-log_len/2
  if player.flip then
-  offsetx += 20
- else
   offsetx -= 20
+ else
+  offsetx += 20
  end
- cam.x += (player.x - offsetx - cam.x)*0.1
- cam.y += (player.y - offsety - cam.y)*0.1
+ cam.x += ((player.x + offsetx) - cam.x)*0.1
+ cam.y += ((player.y + offsety) - cam.y)*0.1
 end
 
 function _update()
