@@ -78,7 +78,7 @@ function _init()
  player.frame = 1
  player.grounded = false
  player.walking = false
- player.link = get_chain(chain_start)
+ player.link = get_chain(chain_start+chain_len/2)
  player.x = player.link.x
  player.y = player.link.y
  player.vy = 0
@@ -86,8 +86,8 @@ function _init()
  player.dv = 0
  player.flip = false
  
- cam.x = 0
- cam.y = 0
+ cam.x = player.x-64
+ cam.y = player.y-256
  
  -- map
  for x=0,127 do
@@ -145,14 +145,38 @@ function update_camera()
  cam.y += ((player.y + offsety) - cam.y)*0.1
 end
 
-function _update()
- update_parts()
- update_pops()
- --local speed = 15
- --local ctrl = flr(chain_len/2)
- --if(btn(2)) chain[ctrl].dv -= speed
- --if(btn(3)) chain[ctrl].dv += speed
+-- shifts everything by x
+function wrap_around(x)
+ local x_l = x/gap
+ player.x += x
+ cam.x += x
+ for p in all(parts) do
+  p.x += x
+ end
+ for p in all(pops) do
+  p.x += x
+ end
+ if(x < 0) do
+  for i=chain_start,chain_end do
+   local link = get_chain(i)
+   link.x += x
+   set_chain(i,nil)
+   set_chain((i+x_l),link)
+  end
+ else
+  for i=chain_end,chain_start,-1 do
+   local link = get_chain(i)
+   link.x += x
+   set_chain(i,nil)
+   set_chain((i+x_l),link)
+  end
+ end
+ chain_start += x_l
+ chain_end = chain_start + chain_len
+end
 
+function update_chain()
+ print(chain_start..' '..chain_end)
  for x=chain_start,chain_end do
   local link = get_chain(x)
   if(link.down) then
@@ -178,6 +202,21 @@ function _update()
   link.y += link.v
   link.dv = 0
  end
+end
+
+-- called from main loop
+function _update()
+
+ if(player.x > 256) then
+  wrap_around(-256)
+ elseif(player.x < -256) then
+  wrap_around(256)
+ end
+
+
+ update_parts()
+ update_pops()
+ update_chain()
  
  -- player
  player.dv = 0
@@ -231,7 +270,7 @@ function _update()
    player.walking = false
    player.grounded = false
    sfx(33,3)
-   --parts
+   --parts & pop
    for p=1,4 do
     add_part(player.x-log_len/2,player.y-8,rnd(4)-2,-rnd(4)-4,rnd(5)+1,30,8)
    end
@@ -258,6 +297,7 @@ function _update()
  end
  player.x += player.vx
  
+ -- wrap individual links
  if(player.x > (chain_start+chain_len/2)*gap) then
   local c = get_chain(chain_start)
   set_chain(chain_start,nil)
@@ -386,9 +426,12 @@ function draw_pops()
  end
 end
 
+-- called from main loop
 function _draw()
  --cls()
  camera(0,0)
+ 
+ -- draw fake clear
  color(14)
  for x=0,128,2 do
   line(x,0,x,128)
@@ -396,8 +439,10 @@ function _draw()
  for y=0,128,2 do
   line(0,y,128,y)
  end
- local cx = (cam.x*0.25%16)
- local cy = ((cam.y-player.x)*0.2%16)
+ 
+ -- draw map
+ local cx = (cam.x/4%16)
+ local cy = ((cam.y-player.x)/4%16)
  map(0,0,-cx,-cy,18,18)
  
  
