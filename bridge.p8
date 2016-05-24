@@ -19,6 +19,7 @@ chain_len = 256/gap
 chain_end = chain_start+chain_len
 
 parts = {}
+pops ={}
 
 function get_chain(x)
  return chain[''..x]
@@ -50,6 +51,15 @@ function add_part(x,y,vx,vy,r,life,col)
  p.age = life
  p.col = col
  add(parts,p)
+end
+
+function add_pop(x,y,r,col)
+ local p = {}
+ p.x = x
+ p.y = y
+ p.r = r
+ p.col = col
+ add(pops,p)
 end
 
 function _init()
@@ -98,6 +108,8 @@ end
 
 
 
+-- updates position by velocity
+-- updates age and clears if dead
 function update_parts()
  for p in all(parts) do
   p.age -= 1
@@ -112,6 +124,15 @@ function update_parts()
  end
 end
 
+-- clears out the pops
+function update_pops()
+ for p in all(pops) do
+  del(pops,p)
+ end
+end
+
+-- interpolate towards player
+-- with offset in facing
 function update_camera()
  local offsety = -64 - 20
  local offsetx = -64-log_len/2
@@ -126,6 +147,7 @@ end
 
 function _update()
  update_parts()
+ update_pops()
  --local speed = 15
  --local ctrl = flr(chain_len/2)
  --if(btn(2)) chain[ctrl].dv -= speed
@@ -163,7 +185,7 @@ function _update()
  local r1 = mid(0.75,0.25,ratio)
  local r2 = mid(0.75,0.25,1-r1)
  local links_y = player.link.y*r2 + player.link.up.y*r1
- if(player.y+max(1,player.vy) > links_y)then
+ if(player.y+max(2,player.vy) > links_y)then
   -- player pushes bridge
   if(player.vy > 0) then
    player.link.v += 3*player.vy*r2
@@ -203,15 +225,16 @@ function _update()
  end
  --jump
  if(player.grounded) then
-  if(btn(2) or btn(4)) then
-   player.vy = -10
+  if(btnp(2) or btnp(4)) then
+   player.vy = -8
+   cam.y -= 8
    player.walking = false
    sfx(33,3)
    --parts
    for p=1,4 do
     add_part(player.x-log_len/2,player.y-8,rnd(4)-2,-rnd(4)-4,rnd(5)+1,30,8)
    end
-   
+   add_pop(player.x-log_len/2,player.y-8,16,8)
    
   end
  end
@@ -355,6 +378,13 @@ function draw_parts()
  end
 end
 
+function draw_pops()
+ for p in all(pops) do
+  color(p.col)
+  circfill(p.x,p.y,p.r)
+ end
+end
+
 function _draw()
  --cls()
  camera(0,0)
@@ -374,6 +404,7 @@ function _draw()
 	
 	draw_chain()
 	
+	draw_pops()
 	draw_parts()
  
  color(0)
