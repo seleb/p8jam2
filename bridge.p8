@@ -159,14 +159,16 @@ function wrap_around(x)
  if(x < 0) do
   for i=chain_start,chain_end do
    local link = get_chain(i)
-   link.x += x
+   link.x += x
+
    set_chain(i,nil)
    set_chain((i+x_l),link)
   end
  else
   for i=chain_end,chain_start,-1 do
    local link = get_chain(i)
-   link.x += x
+   link.x += x
+
    set_chain(i,nil)
    set_chain((i+x_l),link)
   end
@@ -176,7 +178,6 @@ function wrap_around(x)
 end
 
 function update_chain()
- print(chain_start..' '..chain_end)
  for x=chain_start,chain_end do
   local link = get_chain(x)
   if(link.down) then
@@ -426,6 +427,15 @@ function draw_pops()
  end
 end
 
+function draw_debug()
+ color(0)
+ cursor(cam.x+1,cam.y+1)
+ print('time: '..time())
+ print('x: '..player.x)
+ print('y: '..player.y)
+ print('c: '..chain_start..'->'..chain_end)
+end
+
 -- called from main loop
 function _draw()
  --cls()
@@ -453,13 +463,31 @@ function _draw()
 	draw_pops()
 	draw_parts()
  
- color(0)
- cursor(cam.x+1,cam.y+1)
- print('time: '..time())
- print('x: '..player.x)
- print('y: '..player.y)
- print('c: '..chain_start..'->'..chain_end)
- print(stat(16))
+ --border thingy
+ for a=to_screen(2,2),to_screen(125,2),1 do
+ poke(a,shr(peek(a),7))
+ end
+ for a=to_screen(2,3),to_screen(125,3),1 do
+ poke(a,shr(peek(a),7))
+ end
+ for a=to_screen(2,2),to_screen(2,125),64 do
+ poke(a,shr(peek(a),7))
+ end
+ for a=to_screen(125,2),to_screen(125,125),64 do
+ poke(a,shr(peek(a),7))
+ end
+ for a=to_screen(2,124),to_screen(125,124),1 do
+ poke(a,shr(peek(a),7))
+ end
+ for a=to_screen(2,125),to_screen(125,125),1 do
+ poke(a,shr(peek(a),7))
+ end
+ 
+ --draw_debug()
+end
+
+function to_screen(x,y)
+ return 0x6000+(x)/2+y*64
 end
 __gfx__
 00000000000000000000000000002222222000000000000000000000000000000000000077007700000000000000000000000000000000000000000000000000
