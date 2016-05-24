@@ -18,6 +18,8 @@ chain_start = 16
 chain_len = 256/gap
 chain_end = chain_start+chain_len
 
+parts = {}
+
 function get_chain(x)
  return chain[''..x]
 end
@@ -35,6 +37,19 @@ function add_chain(x)
  link.up  =nil
  link.down=nil
  set_chain(x,link)
+end
+
+function add_part(x,y,vx,vy,r,life,col)
+ local p = {}
+ p.x = x
+ p.y = y
+ p.r = r
+ p.vx = vx
+ p.vy = vy
+ p.life = life
+ p.age = life
+ p.col = col
+ add(parts,p)
 end
 
 function _init()
@@ -83,6 +98,20 @@ end
 
 
 
+function update_parts()
+ for p in all(parts) do
+  p.age -= 1
+  p.vy += gravity
+  p.x += p.vx
+  p.y += p.vy
+  
+  -- kill
+  if p.age < 0 then
+   del(parts,p)
+  end 
+ end
+end
+
 function update_camera()
  local offsety = -64 - 20
  local offsetx = -64-log_len/2
@@ -96,6 +125,7 @@ function update_camera()
 end
 
 function _update()
+ update_parts()
  --local speed = 15
  --local ctrl = flr(chain_len/2)
  --if(btn(2)) chain[ctrl].dv -= speed
@@ -177,6 +207,12 @@ function _update()
    player.vy = -10
    player.walking = false
    sfx(33,3)
+   --parts
+   for p=1,4 do
+    add_part(player.x-log_len/2,player.y-8,rnd(4)-2,-rnd(4)-4,rnd(5)+1,30,8)
+   end
+   
+   
   end
  end
  
@@ -308,6 +344,17 @@ function draw_chain()
  end
 end
 
+function draw_parts()
+ for p in all(parts) do
+  color(p.col)
+  circfill(p.x,p.y,p.r*(p.age/p.life))
+  
+  color(p.col-6)
+  circ(p.x,p.y,p.r*(p.age/p.life)+1)
+  
+ end
+end
+
 function _draw()
  --cls()
  camera(0,0)
@@ -326,6 +373,8 @@ function _draw()
 	camera(cam.x, cam.y)
 	
 	draw_chain()
+	
+	draw_parts()
  
  color(0)
  cursor(cam.x+1,cam.y+1)
