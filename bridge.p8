@@ -118,8 +118,7 @@ function _init()
  end
  end
  
- --music
- music(0, 5000, 1+2+3)
+ menu = "press x to start"
 end
 
 
@@ -282,6 +281,10 @@ function lose_life()
  sfx(36,3)
  cam.y += 10
  cam.x += 5
+ 
+ if hud.lives == 0 then
+  menu = "game over! press x to restart"
+ end
 end
 
 function add_pts(pts)
@@ -302,7 +305,25 @@ end
 
 -- called from main loop
 function _update()
-
+ if menu != nil then
+  if btnp(5) then
+   if hud.lives == 0 then
+    run()
+   else
+    menu = nil
+    sfx(32,3)
+    music(0, 5000, 1+2+3)
+   
+    for x=-32,32,8 do
+    for y=-8,8,8 do
+     add_part(cam.x+64+x+rnd(8)-4,rnd(8)-4+y+cam.y+64,rnd(4)-2,-rnd(4)-2,5,50,8)
+    end
+    end
+   end
+  end
+  return nil
+ end
+ 
  if(player.x > 256) then
   wrap_around(-256)
  elseif(player.x < -256) then
@@ -314,19 +335,6 @@ function _update()
  update_pops()
  update_chain()
  
- -- collision
- if(player.link.pts and player.grounded) then
-  add_pts(10)
-  player.link.pts = false
-  add_pop(player.link.x-log_len/2+4, player.link.y-10, 5, 8)
-  add_pop(player.link.x-log_len/2+4, player.link.y-10, 4, 7)
- end
- if(player.link.dmg and player.grounded) then
-  lose_life()
-  player.link.dmg = false
-  add_pop(player.link.x-log_len/2+4, player.link.y-10, 10, 7)
-  add_pop(player.link.x-log_len/2+4, player.link.y-10, 9, 8)
- end
  
  update_phys()
  
@@ -416,6 +424,25 @@ function _update()
   c.up.down = c
   dmg = rnd(1) < 0.1
   c.pts = not c.dmg and rnd(1) < 0.1
+ end
+ 
+ 
+ -- collision
+ if(player.link.pts and player.grounded) then
+  add_pts(10)
+  player.link.pts = false
+  add_pop(player.link.x-log_len/2+4, player.link.y-10, 5, 8)
+  add_pop(player.link.x-log_len/2+4, player.link.y-10, 4, 7)
+  player.link.v += 50
+  player.vy = -10
+ end
+ if(player.link.dmg and player.grounded) then
+  lose_life()
+  player.link.dmg = false
+  add_pop(player.link.x-log_len/2+4, player.link.y-10, 10, 7)
+  add_pop(player.link.x-log_len/2+4, player.link.y-10, 9, 8)
+  player.link.v += 10
+  player.vy = -1
  end
  
  -- get player links for next frame
@@ -561,33 +588,7 @@ function draw_hud()
   end
 end
 
--- called from main loop
-function _draw()
- --cls()
- camera(0,0)
- 
- -- draw fake clear
- color(14)
- for x=0,128,2 do
-  line(x,0,x,128)
- end
- for y=0,128,2 do
-  line(0,y,128,y)
- end
- 
- -- draw map
- local cx = (cam.x/4%16)
- local cy = ((cam.y-player.x)/4%16)
- map(0,0,-cx,-cy,18,18)
- 
- 
-	camera(cam.x, cam.y)
-	
-	draw_chain()
-	
-	draw_parts()
-	
- --border thingxy
+function draw_border()
  for a=to_screen(2,2),to_screen(125,2),1 do
  poke(a,shr(peek(a),7))
  end
@@ -605,10 +606,53 @@ function _draw()
  end
  for a=to_screen(2,125),to_screen(125,125),1 do
  poke(a,shr(peek(a),7))
- end
+ end
+end
 
- draw_hud()
- draw_pops()
+-- called from main loop
+function _draw()
+ camera(0,0)
+ 
+	if menu != nil then
+	 color(14)
+  rectfill(0,0,127,127)
+ else
+  -- draw fake clear
+  color(14)
+  for x=0,128,2 do
+   line(x,0,x,128)
+  end
+  for y=0,128,2 do
+   line(0,y,128,y)
+  end
+ end
+ 
+ -- draw map
+ local cx = (cam.x/4%16)
+ local cy = ((cam.y-player.x)/4%16)
+ map(0,0,-cx,-cy,18,18)
+ 
+ 
+	camera(cam.x, cam.y)
+	
+	if menu == nil then
+ 	draw_chain()
+	
+	 draw_parts()
+
+  draw_hud()
+  draw_pops()
+ else
+  for x=-1,1 do
+  for y=-1,1 do
+   print(menu,cam.x+64-#menu*4/2+x,cam.y+64+y,2)
+  end
+  end
+  print(menu,cam.x+64-#menu*4/2,cam.y+64,7+time()*5%2)
+ end
+ 
+ draw_border()
+ 
  --draw_debug()
 end
 
