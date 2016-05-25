@@ -127,6 +127,23 @@ function _init()
  
  menu = "press x to start"
  col_offset = 0
+ pal_names = {}
+ add(pal_names,"2.cherries 'n cream")
+ add(pal_names,"3.apple pie")
+ add(pal_names,"4.yellowjacket")
+ add(pal_names,"5.toxic waste")
+ add(pal_names,"6.gators")
+ add(pal_names,"7.underwater")
+ add(pal_names,"8.gum underneath a table")
+ add(pal_names,"9.too much halloween candy")
+ add(pal_names,"10.blackstars")
+ add(pal_names,"11.windows high contrast")
+ add(pal_names,"12.blue raspberry")
+ add(pal_names,"13.hardmode")
+ add(pal_names,"14.poison toffee")
+ add(pal_names,"15.forest highway")
+ add(pal_names,"16.covered in cobalt")
+ add(pal_names,"1.lovely lavender")
  pal_swap(-1)
 end
 
@@ -654,8 +671,11 @@ function _draw()
   draw_hud()
   draw_pops()
  else
-  print_ol(menu,cam.x+64-#menu*4/2,cam.y+64,7+time()*5%2)
-  print_ol("score:"..hud.score, cam.x+10, cam.y+10)
+  camera(0,0)
+  print_ol_c(menu,64,7+time()*5%2)
+  print_ol_c("score:"..hud.score, 10, 10)
+  print_ol_c("palette:",64+10)
+  print_ol_c("<"..pal_names[col_offset+1]..">",64+16)
  end
  
  draw_border()
@@ -674,6 +694,10 @@ function print_ol(s,_x,_y)
  end
  end
  print(s,_x,_y,8)
+end
+
+function print_ol_c(s,_y)
+ print_ol(s,64-#s*4/2,_y)
 end
 __gfx__
 00000000000000000000000000002222222000000000000000000000000000000000000077007700000000000000000000000000000000000000000000000000
