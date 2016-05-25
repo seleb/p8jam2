@@ -1,6 +1,9 @@
 pico-8 cartridge // http://www.pico-8.com
 version 7
 __lua__
+-- untitled jam game
+-- by sean
+
 chain = {}
 player = {}
 cam = {}
