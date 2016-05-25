@@ -29,6 +29,7 @@ hud ={}
 phys = {}
 
 dmgtimer = 0
+deadtimer = -1
 
 storage = {}
 
@@ -64,6 +65,7 @@ function add_part(x,y,vx,vy,r,life,col)
  p.age = life
  p.col = col
  add(parts,p)
+ return p
 end
 
 function add_pop(x,y,r,col)
@@ -73,15 +75,18 @@ function add_pop(x,y,r,col)
  p.r = r
  p.col = col
  add(pops,p)
+ return p
 end
 
 function _init()
  cartdata("sean_p8jam2_data")
  storage.high_score_idx = 0
- storage.high_combo_idx = 1
- storage.palette_idx = 2
+ storage.last_score_idx = 1
+ storage.high_combo_idx = 2
+ storage.palette_idx = 3
  
  storage.high_score = dget(storage.high_score_idx)
+ storage.last_score = dget(storage.last_score_idx)
  storage.high_combo = dget(storage.high_combo_idx)
  storage.palette = dget(storage.palette_idx)
  
@@ -326,6 +331,8 @@ function lose_life()
  
  if hud.lives == 0 then
   -- game over
+  storage.last_score = hud.score
+  dset(storage.last_score_idx, storage.last_score)
   if hud.score > storage.high_score then
    storage.high_score = hud.score
    dset(storage.high_score_idx, hud.score)
@@ -334,7 +341,15 @@ function lose_life()
    storage.high_combo = hud.high_combo
    dset(storage.high_combo_idx, hud.high_combo)
   end
-  menu = "game over! press x to restart"
+  
+  del(phys, player)
+  player.grounded = false
+  deadtimer = 80
+  add_pop(cam.x+64,cam.y+64,256,8)
+  music(-1)
+  sfx(37)
+  sfx(38)
+  sfx(39)
  end
 end
 
@@ -365,20 +380,16 @@ function update_menu()
  if btnp(1) then pal_swap(1) end
 
  if btnp(5) then
-  if hud.lives == 0 then
-   run()
-  else
-   -- start game
-   dset(storage.palette_idx,col_offset+1)
-   menu = nil
-   sfx(32,3)
-   music(0, 5000, 1+2+3)
-  
-   for x=-32,32,8 do
-   for y=-8,8,8 do
-    add_part(cam.x+64+x+rnd(8)-4,rnd(8)-4+y+cam.y+64,rnd(4)-2,-rnd(4)-2,5,50,8)
-   end
-   end
+  -- start game
+  dset(storage.palette_idx,col_offset+1)
+  menu = nil
+  sfx(32,3)
+  music(0, 5000, 1+2+3)
+ 
+  for x=-32,32,8 do
+  for y=-8,8,8 do
+   add_part(cam.x+64+x+rnd(8)-4,rnd(8)-4+y+cam.y+64,rnd(4)-2,-rnd(4)-2,5,50,8)
+  end
   end
  end
 end
@@ -401,12 +412,14 @@ dmgtimer *= 0.25
  update_chain()
  
  
- update_phys()
  
  -- player
  
  
  --run
+ if deadtimer == -1 then
+ -- alive
+ update_phys()
  if(btn(0)) then
   player.vx -= 1
   player.flip = true
@@ -455,6 +468,19 @@ dmgtimer *= 0.25
  else
   player.frame = 1
  end
+ elseif deadtimer == 0 then
+  --reset
+  run()
+ else
+  --dead
+  player.frame = 1
+  deadtimer -= 1
+ -- player.vy += gravity*0.1
+  player.y += mid(16,-8,30-deadtimer/2)
+  add_part(player.x+rnd(16)-8-log_len/2,player.y+rnd(16)-8,rnd(2)-1,-rnd(4),rnd(4)+2,15,8)
+  local p = add_pop(player.x-log_len/2+rnd(32)-16,player.y+rnd(32)-16,rnd(80-deadtimer)*0.25,2)
+  add_pop(p.x,p.y,p.r-1,8)
+ end
  
  player.vx *= damping
  if(abs(player.vx) < 0.01) then
@@ -495,20 +521,20 @@ dmgtimer *= 0.25
  
  -- collision
  if(player.link.pts and player.grounded) then
-  add_pts(10)
   player.link.pts = false
   add_pop(player.link.x-log_len/2+4, player.link.y-10, 5, 8)
   add_pop(player.link.x-log_len/2+4, player.link.y-10, 4, 7)
   player.link.v += 50
   player.vy = -10
+  add_pts(10)
  end
  if(player.link.dmg and player.grounded) then
-  lose_life()
   player.link.dmg = false
   add_pop(player.link.x-log_len/2+4, player.link.y-10, 10, 7)
   add_pop(player.link.x-log_len/2+4, player.link.y-10, 9, 8)
   player.link.v += 10
   player.vy = -1
+  lose_life()
  end
  
  -- get player links for next frame
@@ -546,7 +572,7 @@ function pal_swap(d)
 end
 
 function draw_player()
- sspr(8+player.frame*16,0,16,16,player.x-8-log_len/2,player.y-16, 16, 16, player.flip, false)
+ sspr(8+player.frame*16,0,16,16,player.x-8-log_len/2,player.y-16, 16, 16, player.flip, deadtimer != -1 and time()%0.5 > 0.25)
 end
 
 function draw_chain()
@@ -664,6 +690,16 @@ function draw_border()
  end
 end
 
+function draw_menu()
+ camera(0,0)
+ print_ol_c(menu,64,7+time()*5%2)
+ print_ol_c("last score:"..storage.last_score, 90)
+ print_ol_c("high score:"..storage.high_score, 100)
+ print_ol_c("high combo:"..storage.high_combo, 110)
+ print_ol_c("palette:",64+10)
+ print_ol_c("<"..pal_names[col_offset+1]..">",64+16)
+end
+
 -- called from main loop
 function _draw()
  camera(0,0)
@@ -698,14 +734,26 @@ function _draw()
 
   draw_hud()
   draw_pops()
+  
+  
+  if deadtimer != -1 then
+  camera(0)
+  color(14)
+  if deadtimer/10 < 1 then
+  rectfill(0,0,127,127)
+  elseif deadtimer/10 < 3 then
+   for y=0,127,2do
+    line(0,y,127,y)
+   end
+   if deadtimer/10 < 2 then
+    for x=0,127,2do
+     line(x,0,x,127)
+    end
+   end
+  end
+  end
  else
-  camera(0,0)
-  print_ol_c(menu,64,7+time()*5%2)
-  print_ol_c("score:"..hud.score, 10)
-  print_ol_c("high score:"..storage.high_score, 20)
-  print_ol_c("high combo:"..storage.high_combo, 30)
-  print_ol_c("palette:",64+10)
-  print_ol_c("<"..pal_names[col_offset+1]..">",64+16)
+  draw_menu()
  end
  
  draw_border()
@@ -932,9 +980,9 @@ __sfx__
 010a00040854508603045450460300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003
 000200001b03427031330312e0213f0213d0111b0151b0012b7013370133701357012400103701077010a7010f701117010000133701307012b701247011b7010000100001000010000100001000010000100001
 010200003a3712e661273511b6410a331056210000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010500003c6753a6753a67535675336752e675246751d675136750a675076753e605076353e6050761530605396053f605396053f605006050060500605006050060500605006050060500605006050060500605
+010800000c1710a1710a17105171031710a1710017105171071710a171071710210107131021010711130101391013f101391013f101001010010100101001010010100101001010010100101001010010100101
+011000040c6450e655106650e65500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
