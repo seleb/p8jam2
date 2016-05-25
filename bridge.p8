@@ -28,6 +28,8 @@ hud ={}
 
 phys = {}
 
+dmgtimer = 0
+
 function get_chain(x)
  return chain[''..x]
 end
@@ -290,6 +292,8 @@ function lose_life()
  cam.y += 10
  cam.x += 5
  
+ dmgtimer = 8
+ 
  if hud.lives == 0 then
   menu = "game over! press x to restart"
  end
@@ -312,25 +316,33 @@ function add_pts(pts)
  add_pop(hud.x+8,hud.y+4,7,7)
 end
 
--- called from main loop
-function _update()
- if menu != nil then
-  if btnp(5) then
-   if hud.lives == 0 then
-    run()
-   else
-    menu = nil
-    sfx(32,3)
-    music(0, 5000, 1+2+3)
-   
-    for x=-32,32,8 do
-    for y=-8,8,8 do
-     add_part(cam.x+64+x+rnd(8)-4,rnd(8)-4+y+cam.y+64,rnd(4)-2,-rnd(4)-2,5,50,8)
-    end
-    end
+
+function update_menu()
+ --palette selection
+ if btnp(0) then pal_swap(-1) end
+ if btnp(1) then pal_swap(1) end
+
+ if btnp(5) then
+  if hud.lives == 0 then
+   run()
+  else
+   menu = nil
+   sfx(32,3)
+   music(0, 5000, 1+2+3)
+  
+   for x=-32,32,8 do
+   for y=-8,8,8 do
+    add_part(cam.x+64+x+rnd(8)-4,rnd(8)-4+y+cam.y+64,rnd(4)-2,-rnd(4)-2,5,50,8)
+   end
    end
   end
-  return nil
+ end
+end
+
+function update_game()
+dmgtimer *= 0.25
+ if dmgtimer < 1 then
+  dmgtimer = 0
  end
  
  if(player.x > 256) then
@@ -468,9 +480,15 @@ function _update()
  
  update_camera()
  update_hud()
- 
- if(btnp(5)) then
-  pal_swap(1)
+end
+
+
+-- called from main loop
+function _update()
+ if menu != nil then
+  update_menu()
+ else
+  update_game()
  end
 end
 
@@ -572,23 +590,32 @@ function draw_hud()
 end
 
 function draw_border()
- for a=to_screen(2,2),to_screen(125,2),1 do
+ -- top
+ for y=0,dmgtimer+1 do
+ for a=to_screen(2,2+y),to_screen(125,2+y),1 do
  poke(a,shr(peek(a),7))
  end
- for a=to_screen(2,3),to_screen(125,3),1 do
+ end
+ 
+ -- left
+ for x=0,dmgtimer+1,2 do
+ for a=to_screen(2+x,2),to_screen(2+x,125),64 do
  poke(a,shr(peek(a),7))
  end
- for a=to_screen(2,2),to_screen(2,125),64 do
+ end
+ 
+ -- right
+ for x=0,dmgtimer+1,2 do
+ for a=to_screen(125-x,2),to_screen(125-x,125),64 do
  poke(a,shr(peek(a),7))
  end
- for a=to_screen(125,2),to_screen(125,125),64 do
+ end
+ 
+ -- bottom
+ for y=0,dmgtimer+1 do
+ for a=to_screen(2,125-y),to_screen(125,125-y),1 do
  poke(a,shr(peek(a),7))
  end
- for a=to_screen(2,124),to_screen(125,124),1 do
- poke(a,shr(peek(a),7))
- end
- for a=to_screen(2,125),to_screen(125,125),1 do
- poke(a,shr(peek(a),7))
  end
 end
 
@@ -846,7 +873,7 @@ __sfx__
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000500000c7700d7700e7701077013770177701e7702877031770397703e770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010500000c7740d7700e7701077013770177701e7702877031770397703e7753e7013e7313e7003e71530700397003f700397003f700000000000000000000000000000000000000000000000000000000000000
 010200000a7740c76111751167413a7213774135755307612b771277713f0001d00024000120001200012000130001400000000130003070013000130001b7001300000000000000000000000000000000000000
 010a00040854508603045450460300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003
 000200001b03427031330312e0213f0213d0111b0151b0012b7013370133701357012400103701077010a7010f701117010000133701307012b701247011b7010000100001000010000100001000010000100001
