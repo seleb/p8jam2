@@ -1,8 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 7
 __lua__
--- untitled jam game
--- by sean
+-- star picker-upper
+-- made by sean for #p8jam2
 
 chain = {}
 player = {}
@@ -712,8 +712,25 @@ function draw_menu()
  print_ol_c("high score:"..storage.high_score, 60)
  print_ol_c("high combo:"..storage.high_combo, 66)
  print_ol_c("press 'x' to start",85)
+ print_ol_c("hold 'z' for instructions",91)
  print_ol_c("palette:",105)
  print_ol_c("<"..pal_names[col_offset+1]..">",111)
+ if btn(4) then
+  color(2)
+  rectfill(10,35,128-10,128-10)
+  print_ol_c("arrows to move/jump", 40)
+  print_ol_c("pick up good stars", 50)
+  print_ol_c("good stars are bouncy", 56)
+  print_ol_c("build bounce combos", 62)
+  print_ol_c("avoid bad stars", 70)
+  print_ol_c("bad stars hurt", 76)
+  
+  sspr(16,16,40,16,64-24,85)
+  print_ol_c("good bad", 100)
+  
+  print_ol_c("have fun!", 110)
+  
+ end
 end
 
 -- called from main loop
