@@ -30,6 +30,8 @@ phys = {}
 
 dmgtimer = 0
 
+storage = {}
+
 function get_chain(x)
  return chain[''..x]
 end
@@ -74,6 +76,15 @@ function add_pop(x,y,r,col)
 end
 
 function _init()
+ cartdata("sean_p8jam2_data")
+ storage.high_score_idx = 0
+ storage.high_combo_idx = 1
+ storage.palette_idx = 2
+ 
+ storage.high_score = dget(storage.high_score_idx)
+ storage.high_combo = dget(storage.high_combo_idx)
+ storage.palette = dget(storage.palette_idx)
+ 
  for x=chain_start,chain_end do
   add_chain(x)
  end
@@ -108,6 +119,8 @@ function _init()
  hud.lives = hud.max_lives
  hud.parts = {}
  hud.chain = 1
+ hud.high_combo = 0
+ 
  
  amp = 0
  frq = 0
@@ -126,7 +139,7 @@ function _init()
  end
  
  menu = "press x to start"
- col_offset = 0
+ col_offset = storage.palette
  pal_names = {}
  add(pal_names,"2.cherries 'n cream")
  add(pal_names,"3.apple pie")
@@ -312,6 +325,15 @@ function lose_life()
  dmgtimer = 8
  
  if hud.lives == 0 then
+  -- game over
+  if hud.score > storage.high_score then
+   storage.high_score = hud.score
+   dset(storage.high_score_idx, hud.score)
+  end
+  if hud.high_combo > storage.high_combo then
+   storage.high_combo = hud.high_combo
+   dset(storage.high_combo_idx, hud.high_combo)
+  end
   menu = "game over! press x to restart"
  end
 end
@@ -326,6 +348,9 @@ function add_pts(pts)
  add(hud.parts, p)
  hud.score += p.pts
  hud.chain += 1
+ if hud.chain > hud.high_combo then
+  hud.high_combo = hud.chain
+ end
  hud.y -= 3
  sfx(35,3)
  cam.y += 10
@@ -343,6 +368,8 @@ function update_menu()
   if hud.lives == 0 then
    run()
   else
+   -- start game
+   dset(storage.palette_idx,col_offset+1)
    menu = nil
    sfx(32,3)
    music(0, 5000, 1+2+3)
@@ -608,30 +635,31 @@ end
 
 function draw_border()
  -- top
+ local b = 7
  for y=0,dmgtimer+1 do
  for a=to_screen(2,2+y),to_screen(125,2+y),1 do
- poke(a,shr(peek(a),7))
+ poke(a,shr(peek(a),b))
  end
  end
  
  -- left
  for x=0,dmgtimer+1,2 do
  for a=to_screen(2+x,2),to_screen(2+x,125),64 do
- poke(a,shr(peek(a),7))
+ poke(a,shr(peek(a),b))
  end
  end
  
  -- right
  for x=0,dmgtimer+1,2 do
  for a=to_screen(125-x,2),to_screen(125-x,125),64 do
- poke(a,shr(peek(a),7))
+ poke(a,shr(peek(a),b))
  end
  end
  
  -- bottom
  for y=0,dmgtimer+1 do
  for a=to_screen(2,125-y),to_screen(125,125-y),1 do
- poke(a,shr(peek(a),7))
+ poke(a,shr(peek(a),b))
  end
  end
 end
@@ -673,7 +701,9 @@ function _draw()
  else
   camera(0,0)
   print_ol_c(menu,64,7+time()*5%2)
-  print_ol_c("score:"..hud.score, 10, 10)
+  print_ol_c("score:"..hud.score, 10)
+  print_ol_c("high score:"..storage.high_score, 20)
+  print_ol_c("high combo:"..storage.high_combo, 30)
   print_ol_c("palette:",64+10)
   print_ol_c("<"..pal_names[col_offset+1]..">",64+16)
  end
