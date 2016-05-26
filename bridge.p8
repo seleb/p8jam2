@@ -397,7 +397,7 @@ function update_menu()
   -- start game
   dset(storage.palette_idx,col_offset+1)
   menu = false
-  sfx(32,3)
+  sfx(32,3)
  
   for x=-32,32,8 do
   for y=-8,8,8 do
@@ -704,31 +704,31 @@ function draw_border()
 end
 
 function draw_menu()
- camera(0,sin(time()*0.25)*3)
+ camera(0,sin(time()*0.25)*3)
  map(32,4,-1,5,16,4)
  map(32,0,-1,5+mid(-1,1,sin(time()*0.25)*2),16,4)
  print_ol_c("made by sean for #p8jam2", 36)
  print_ol_c("last score:"..storage.last_score, 54)
  print_ol_c("high score:"..storage.high_score, 60)
  print_ol_c("high combo:"..storage.high_combo, 66)
- print_ol_c("press 'x' to start",85)
- print_ol_c("hold 'z' for instructions",91)
+ print_ol_c("press 'x' to start",85)
+ print_ol_c("hold 'z' for instructions",91)
  print_ol_c("palette:",105)
  print_ol_c("<"..pal_names[col_offset+1]..">",111)
  if btn(4) then
   color(2)
   rectfill(10,35,128-10,128-10)
   print_ol_c("arrows to move/jump", 40)
-  print_ol_c("pick up good stars", 50)
+  print_ol_c("pick up good stars", 50)
   print_ol_c("good stars are bouncy", 56)
   print_ol_c("build bounce combos", 62)
-  print_ol_c("avoid bad stars", 70)
-  print_ol_c("bad stars hurt", 76)
+  print_ol_c("avoid bad stars", 70)
+  print_ol_c("bad stars hurt", 76)
   
   sspr(16,16,40,16,64-24,85)
-  print_ol_c("good bad", 100)
+  print_ol_c("good bad", 100)
   
-  print_ol_c("have fun!", 110)
+  print_ol_c("have fun!", 110)
   
  end
 end
@@ -772,21 +772,21 @@ function _draw()
   if deadtimer != -1 then
   camera(0)
   color(14)
-  if deadtimer/10 < 1 then
-  rectfill(0,0,127,127)
-  elseif deadtimer/10 < 3 then
-   for y=0,127,2do
+  if deadtimer/10 < 1 then
+   rectfill(0,0,127,127)
+  elseif deadtimer/10 < 3 then
+   for y=0,127,2 do
     line(0,y,127,y)
    end
    if deadtimer/10 < 2 then
-    for x=0,127,2do
+    for x=0,127,2 do
      line(x,0,x,127)
     end
    end
   end
   end
  else
-  draw_menu()
+  draw_menu()
 	 draw_parts()
 	 draw_pops()
  end
